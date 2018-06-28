@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser'
 import passport from 'passport'
 import uuid from 'node-uuid'
 import { Strategy as GoogleStrategy } from 'passport-google-oauth2'
-
+import { Strategy as LocalStrategy } from 'passport-local'
 import clientActions from './client/actions'
 import config from './config'
 
@@ -70,7 +70,7 @@ app.ws('/', function(ws, req) {
             return
         }
 
-        if(undefined !== typeof tokenSpace[key].profile.photos)
+        if(tokenSpace[key].profile.photos)
             avatar = tokenSpace[key].profile.photos[0].value
 
         currentUsers.push({
@@ -152,9 +152,45 @@ app.get('/logout', function(req, res) {
 
 app.get('/login', function(req, res) {
     res.send(
-        `<a href="/auth/google">Click here to login with Google+</a>`
+        `<form action="/login" method="post">
+    <div>
+        <label>Username:</label>
+        <input type="text" name="username"/>
+    </div>
+    <div>
+        <label>Password:</label>
+        <input type="password" name="password"/>
+    </div>
+    <div>
+        <input type="submit" value="Log In"/>
+    </div>
+</form>
+`
     )
 })
+
+app.post('/login',
+  passport.authenticate('local', { successRedirect: '/',
+    failureRedirect: '/login',
+    failureFlash: true })
+);
+
+passport.use(new LocalStrategy((username, pass, done) => {
+  let uuidToken = uuid.v4()
+
+  tokenSpace[uuidToken] = {
+    key:        uuidToken,
+    profile:    {
+        id: username,
+        displayName: username
+    },
+    createdAt:  Date.now()
+  }
+
+  return done(null, {
+    key: uuidToken
+  })
+}))
 
 passport.use(new GoogleStrategy({
     clientID:           GOOGLE_CLIENT_ID,
