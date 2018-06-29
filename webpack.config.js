@@ -6,8 +6,8 @@ module.exports = {
     entry: ['./client/index.js', './client/style.sass'],
     module: {
         loaders: [
-            { test: /\.sass$/, loader: 'style!css!sass?indentedSyntax' },
-            { test: /\.scss$/, loader: 'style!css!sass' },
+            { test: /\.sass$/, loader: 'style-loader!css-loader!sass?indentedSyntax' },
+            { test: /\.scss$/, loader: 'style-loader!css!sass' },
             { test: /\.js$/, exclude: /node_modules/, loader: 'babel' }
         ]
     },
