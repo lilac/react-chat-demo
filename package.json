@@ -24,6 +24,7 @@
     "express-ws": "^1.0.0",
     "flexboxgrid": "^6.3.0",
     "install": "^0.4.4",
+    "jsonwebtoken": "^8.3.0",
     "material-ui": "^0.14.4",
     "node-sass": "^3.4.2",
     "node-uuid": "^1.4.7",

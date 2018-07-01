@@ -7,6 +7,8 @@ import passport from 'passport'
 import uuid from 'node-uuid'
 import { Strategy as GoogleStrategy } from 'passport-google-oauth2'
 import { Strategy as LocalStrategy } from 'passport-local'
+import jwt from 'jsonwebtoken'
+
 import clientActions from './client/actions'
 import config from './config'
 
@@ -21,7 +23,7 @@ const { BASE_URL,
 const webSocketApp  = expressWs(express())
 const app           = webSocketApp.app
 
-const HTML = () =>
+const HTML = (token) =>
 `<!DOCTYPE html>
 <html>
     <head>
@@ -30,6 +32,9 @@ const HTML = () =>
 
     <body>
         <div id="origin"></div>
+        <script>
+            window.token = '${token}';
+        </script>
         <script src="/bundle.js" type="text/javascript"></script>
     </body>
 </html>`
@@ -137,9 +142,16 @@ app.ws('/', function(ws, req) {
     })
 })
 
+function sign(data) {
+    return jwt.sign(
+        data,
+        config.jwt.secret
+    )
+}
+
 app.get('/', function(req, res) {
     if(typeof req.user !== 'undefined') {
-        res.send(HTML())
+        res.send(HTML(sign(req.user)))
     } else {
         res.redirect('/login')
     }
@@ -177,45 +189,17 @@ app.post('/login',
 
 passport.use(new LocalStrategy((username, pass, done) => {
   let uuidToken = uuid.v4()
-
+  let profile = {
+      id: username,
+      displayName: username
+  }
   tokenSpace[uuidToken] = {
     key:        uuidToken,
-    profile:    {
-        id: username,
-        displayName: username
-    },
+    profile,
     createdAt:  Date.now()
   }
 
-  return done(null, {
-    key: uuidToken
-  })
+  return done(null, profile)
 }))
 
-passport.use(new GoogleStrategy({
-    clientID:           GOOGLE_CLIENT_ID,
-    clientSecret:       GOOGLE_CLIENT_SECRET,
-    callbackURL:        GOOGLE_RETURN_URL,
-    scope:              DESIRED_OAUTH_SCOPE,
-    passReqToCallback:  true
-}, function(req, token, refreshToken, profile, done) {
-    let uuidToken = uuid.v4()
-
-    tokenSpace[uuidToken] = {
-        key:        uuidToken,
-        profile:    profile,
-        createdAt:  Date.now()
-    }
-
-    done(null, {
-        key: uuidToken
-    })
-}))
-
-app.get('/auth/google', passport.authenticate('google'))
-app.get('/auth/google/return',
-    passport.authenticate('google', {
-        successRedirect: '/',
-        failureRedirect: '/login' }))
-
-app.listen(8080, () => console.log('Listening on port 8080.'))
+app.listen(8000, () => console.log('Listening on port 8000.'))
